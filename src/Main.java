@@ -1,52 +1,147 @@
-import java.util.Scanner;
-import java.util.Random;
-import java.util.ArrayList;
+import java.util.*;
 
 public class Main {
     private static final int size = 8;
-    private static String[][] outputField = new String[size][size];
-    private static String[][] shipsLocations = new String[size][size];
+    private static final String[][] outputField = new String[size][size];
+    private static final String[][] shipsLocations = new String[size][size];
     private static final String water = "🌊";
     private static final String hit = "🎯";
     private static final String missedHit = "⭕";
     private static final String sunk = "☠️";
     private static final String ship = "🚢";
-    private static final String[][] shipsSizes = { { "🚢", "🚢", "🚢",  }, { "🚢", "🚢",  }, { "🚢", "🚢",  }, { "🚢",  }, {"🚢",}, { "🚢",  }, { "🚢",  } };
-    private static Random random = new Random();
+    private static final String[][] shipsSizes = { { "🚢", "🚢", "🚢" }, { "🚢", "🚢" }, { "🚢", "🚢" }, { "🚢" }, { "🚢" }, { "🚢" }, { "🚢" } };
+    private static final Random random = new Random();
+    static ArrayList<String> players = new ArrayList<>();
+    static ArrayList<Integer> scores = new ArrayList<>();
+    static ArrayList<Integer> coordinatesForCheckingSunk = new ArrayList<>();
+    static ArrayList<Boolean> waysForCheckingSunk = new ArrayList<>();
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
-        Boolean gameContinues = true;
-        ArrayList<String> gamers = new ArrayList<>();
-        while (gameContinues)
-        {
+        boolean gameContinues = true;
+        while (gameContinues) {
             System.out.println("Welcome to Sea Battle!");
             System.out.println("Please enter your name: ");
             String gamerName = sc.nextLine();
-            gamers.add(gamerName); 
+            players.add(gamerName);
             initializeMatrices();
-            for(String[] shipSize : shipsSizes) {
+            for (String[] shipSize : shipsSizes) {
                 locateShip(shipSize.length);
             }
-            int shots = 0;
+            int numberShots = playGame(sc);
             showField();
+            scores.add(numberShots);
+            clearSavedCoordinatesCheckingSunk();
+            showPlayersScores();
 
+            System.out.print("Do you want to play again? NO or YES: ");
+            String choice = sc.nextLine().trim().toUpperCase();
+            if ("NO".equals(choice)) {
+                gameContinues = false;
+            }
+        }
+        sc.close();
+    }
+
+    public static int playGame(Scanner sc) {
+        int shots = 0;
+        while (checkShips()) {
+            showField();
+            int[] coordinates = getPlayerInput(sc);
+            if (shipsLocations[coordinates[0]][coordinates[1]].equals(ship)) {
+                shipsLocations[coordinates[0]][coordinates[1]] = hit;
+                outputField[coordinates[0]][coordinates[1]] = hit;
+                clearScreen();
+                System.out.println("Hit!");
+                shots++;
+                changeSunkShipSymbol();
+            } else if (shipsLocations[coordinates[0]][coordinates[1]].equals(hit) || shipsLocations[coordinates[0]][coordinates[1]].equals(sunk)) {
+                clearScreen();
+                System.out.println("Was already hit, try again");
+            } else {
+                clearScreen();
+                System.out.println("Miss");
+                shipsLocations[coordinates[0]][coordinates[1]] = missedHit;
+                outputField[coordinates[0]][coordinates[1]] = missedHit;
+                shots++;
+            }
+        }
+        return shots;
+    }
+
+    static void changeSunkShipSymbol() {
+        int[] shipSizes = {3, 2, 2};
+
+        for (int shipIndex = 0; shipIndex < shipSizes.length; shipIndex++) {
+            int shipSize = shipSizes[shipIndex];
+            int row = coordinatesForCheckingSunk.get(shipIndex * 2);
+            int col = coordinatesForCheckingSunk.get(shipIndex * 2 + 1);
+            boolean isHorizontal = waysForCheckingSunk.get(shipIndex);
+
+
+            if (isShipSunk(row, col, shipSize, isHorizontal)) {
+                markShipAsSunk(row, col, shipSize, isHorizontal);
+            }
+        }
+
+
+        for (int i = 6; i < coordinatesForCheckingSunk.size(); i += 2) {
+            int row = coordinatesForCheckingSunk.get(i);
+            int col = coordinatesForCheckingSunk.get(i + 1);
+            if (outputField[row][col].equals(hit)) {
+                shipsLocations[row][col] = sunk;
+                outputField[row][col] = sunk;
+            }
         }
     }
-    public static void initializeMatrices()
-    {
-        String[] letters = {" ", " A ", "B ", "C ", "D ", "E ", " F ", "G"};
-        String[] numbers = {" ", "1", "2", "3", "4", "5", "6", "7"};
-        for (int i = 0; i < size; i++)
-        {
-            for(int j = 0; j < size; j++)
-            {
+
+
+    static boolean isShipSunk(int row, int col, int size, boolean isHorizontal) {
+        for (int i = 0; i < size; i++) {
+            int r = isHorizontal ? row : row + i;
+            int c = isHorizontal ? col + i : col;
+            if (!shipsLocations[r][c].equals(hit)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static void markShipAsSunk(int row, int col, int size, boolean isHorizontal) {
+        for (int i = 0; i < size; i++) {
+            int r = isHorizontal ? row : row + i;
+            int c = isHorizontal ? col + i : col;
+            shipsLocations[r][c] = sunk;
+            outputField[r][c] = sunk;
+        }
+    }
+
+    static void clearSavedCoordinatesCheckingSunk() {
+        coordinatesForCheckingSunk.clear();
+        waysForCheckingSunk.clear();
+    }
+
+    public static boolean checkShips() {
+        for (int i = 1; i < size; i++) {
+            for (int j = 1; j < size; j++) {
+                if (shipsLocations[i][j].equals(ship)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static void initializeMatrices() {
+        String[] letters = { " ", " A ", "B", " C", " D", " E ", "F", " G" };
+        String[] numbers = { " ", "1", "2", "3", "4", "5", "6", "7" };
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
                 outputField[i][j] = water;
                 shipsLocations[i][j] = water;
             }
         }
-        for(int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             outputField[0][i] = letters[i];
             outputField[i][0] = numbers[i];
             shipsLocations[0][i] = letters[i];
@@ -66,6 +161,9 @@ public class Main {
                     int newRow = horizontal ? row : row + i;
                     int newCol = horizontal ? col + i : col;
                     shipsLocations[newRow][newCol] = ship;
+                    coordinatesForCheckingSunk.add(newRow);
+                    coordinatesForCheckingSunk.add(newCol);
+                    waysForCheckingSunk.add(horizontal);
                 }
                 placed = true;
             }
@@ -73,40 +171,66 @@ public class Main {
     }
 
     public static boolean canPlaceShip(int row, int col, int shipSize, boolean horizontal) {
-        for (int i = -1; i < shipSize; i++) {
-            for (int j = -1; j < shipSize; j++) {
-                int newRow = horizontal ? row + j: row + i;
-                int newCol = horizontal ? col + i : col + j;
-                if (newRow > 0 && newRow < size && newCol > 0 && newCol < size) {
-                    if (shipsLocations[newRow][newCol].equals(ship)) {
+        for (int i = 0; i < shipSize; i++) {
+            int newRow = horizontal ? row : row + i;
+            int newCol = horizontal ? col + i : col;
+
+            if (newRow >= size || newCol >= size || !shipsLocations[newRow][newCol].equals(water)) {
+                return false;
+            }
+
+            for (int r = newRow - 1; r <= newRow + 1; r++) {
+                for (int c = newCol - 1; c <= newCol + 1; c++) {
+                    if (r >= 1 && r < size && c >= 1 && c < size && shipsLocations[r][c].equals(ship)) {
                         return false;
                     }
                 }
             }
-
         }
         return true;
     }
-    public static void changeField(String[][] field)
-    {
 
+    public static int[] getPlayerInput(Scanner sc) {
+        while (true) {
+            System.out.println("Enter the coordinates (e.g., B3), or type 'exit' to quit:");
+            String input = sc.nextLine().trim().toUpperCase();
+
+            if (input.equals("EXIT")) {
+                System.out.println("Exiting the game...");
+                System.exit(0);
+            }
+
+            if (!input.matches("^[A-G][1-7]$")) {
+                System.out.println("Invalid input format. Use a letter A-G followed by a number 1-7.");
+                continue;
+            }
+
+            char columnChar = input.charAt(0);
+            int col = columnChar - 'A' + 1;
+            int row = Character.getNumericValue(input.charAt(1));
+            return new int[] { row, col };
+        }
     }
-    public static void showField()
-    {
-        for (int i = 0; i < size; i++)
-        {
-            for(int j = 0; j < size; j++)
-            {
-                System.out.print(outputField[i][j] + " ");
+
+    public static void showField() {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                System.out.print(shipsLocations[i][j] + " ");
             }
             System.out.println();
         }
     }
 
-    public static void clearScreen()
-    {
-        System.out.println("\033[H\033[2J");
-        for(int i = 0; i < 50; i++)
+    static void showPlayersScores() {
+        System.out.println("Results: ");
+        for (int i = 0; i < players.size(); i++) {
+            System.out.println(players.get(i) + "'s score is: " + (111 - scores.get(i)));
+        }
+    }
+
+    public static void clearScreen() {
+        System.out.print("\033[H\033[2J");
+        for (int i = 0; i < 25; i++)
         {
             System.out.println();
         }

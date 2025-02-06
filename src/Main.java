@@ -12,7 +12,7 @@ public class Main {
     private static final String[][] shipsSizes = { { "🚢", "🚢", "🚢" }, { "🚢", "🚢" }, { "🚢", "🚢" }, { "🚢" }, { "🚢" }, { "🚢" }, { "🚢" } };
     private static final Random random = new Random();
     static ArrayList<String> players = new ArrayList<>();
-    static ArrayList<Integer> scores = new ArrayList<>();
+    static ArrayList<Integer> shots = new ArrayList<>();
     static ArrayList<int[]> shipCoordinates = new ArrayList<>();
     static ArrayList<Boolean> shipOrientations = new ArrayList<>();
 
@@ -30,13 +30,17 @@ public class Main {
             }
             int numberShots = playGame(sc);
             showField();
-            scores.add(numberShots);
+            shots.add(numberShots);
             shipCoordinates.clear();
             shipOrientations.clear();
             showPlayersScores();
 
             System.out.print("Do you want to play again? NO or YES: ");
             String choice = sc.nextLine().trim().toUpperCase();
+            while(!choice.equals("NO") && !choice.equals("YES")) {
+                System.out.println("Please enter  NO or YES: ");
+                choice = sc.nextLine().trim().toUpperCase();
+            }
             if ("NO".equals(choice)) {
                 gameContinues = false;
             }
@@ -206,7 +210,7 @@ public class Main {
     static void showPlayersScores() {
         System.out.println("Results: ");
         for (int i = 0; i < players.size(); i++) {
-            System.out.println(players.get(i) + "'s score is: " + (111 - scores.get(i)));
+            System.out.println(players.get(i) + "'s number of shots: " + shots.get(i));
         }
     }
 

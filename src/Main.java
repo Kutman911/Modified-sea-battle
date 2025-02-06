@@ -13,8 +13,8 @@ public class Main {
     private static final Random random = new Random();
     static ArrayList<String> players = new ArrayList<>();
     static ArrayList<Integer> scores = new ArrayList<>();
-    static ArrayList<Integer> coordinatesForCheckingSunk = new ArrayList<>();
-    static ArrayList<Boolean> waysForCheckingSunk = new ArrayList<>();
+    static ArrayList<int[]> shipCoordinates = new ArrayList<>();
+    static ArrayList<Boolean> shipOrientations = new ArrayList<>();
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -31,7 +31,8 @@ public class Main {
             int numberShots = playGame(sc);
             showField();
             scores.add(numberShots);
-            clearSavedCoordinatesCheckingSunk();
+            shipCoordinates.clear();
+            shipOrientations.clear();
             showPlayersScores();
 
             System.out.print("Do you want to play again? NO or YES: ");
@@ -54,7 +55,7 @@ public class Main {
                 clearScreen();
                 System.out.println("Hit!");
                 shots++;
-                changeSunkShipSymbol();
+                checkAndMarkSunkShips();
             } else if (shipsLocations[coordinates[0]][coordinates[1]].equals(hit) || shipsLocations[coordinates[0]][coordinates[1]].equals(sunk)) {
                 clearScreen();
                 System.out.println("Was already hit, try again");
@@ -69,32 +70,19 @@ public class Main {
         return shots;
     }
 
-    static void changeSunkShipSymbol() {
-        int[] shipSizes = {3, 2, 2};
-
-        for (int shipIndex = 0; shipIndex < shipSizes.length; shipIndex++) {
-            int shipSize = shipSizes[shipIndex];
-            int row = coordinatesForCheckingSunk.get(shipIndex * 2);
-            int col = coordinatesForCheckingSunk.get(shipIndex * 2 + 1);
-            boolean isHorizontal = waysForCheckingSunk.get(shipIndex);
-
+    static void checkAndMarkSunkShips() {
+        for (int i = 0; i < shipCoordinates.size(); i++) {
+            int[] coords = shipCoordinates.get(i);
+            boolean isHorizontal = shipOrientations.get(i);
+            int row = coords[0];
+            int col = coords[1];
+            int shipSize = shipsSizes[i].length;
 
             if (isShipSunk(row, col, shipSize, isHorizontal)) {
                 markShipAsSunk(row, col, shipSize, isHorizontal);
             }
         }
-
-
-        for (int i = 6; i < coordinatesForCheckingSunk.size(); i += 2) {
-            int row = coordinatesForCheckingSunk.get(i);
-            int col = coordinatesForCheckingSunk.get(i + 1);
-            if (outputField[row][col].equals(hit)) {
-                shipsLocations[row][col] = sunk;
-                outputField[row][col] = sunk;
-            }
-        }
     }
-
 
     static boolean isShipSunk(int row, int col, int size, boolean isHorizontal) {
         for (int i = 0; i < size; i++) {
@@ -116,11 +104,6 @@ public class Main {
         }
     }
 
-    static void clearSavedCoordinatesCheckingSunk() {
-        coordinatesForCheckingSunk.clear();
-        waysForCheckingSunk.clear();
-    }
-
     public static boolean checkShips() {
         for (int i = 1; i < size; i++) {
             for (int j = 1; j < size; j++) {
@@ -133,7 +116,7 @@ public class Main {
     }
 
     public static void initializeMatrices() {
-        String[] letters = { " ", " A ", "B", " C", " D", " E ", "F", " G" };
+        String[] letters = { " ", " A ", "B", " C", " D", " E ", "F ", " G" };
         String[] numbers = { " ", "1", "2", "3", "4", "5", "6", "7" };
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
@@ -161,10 +144,9 @@ public class Main {
                     int newRow = horizontal ? row : row + i;
                     int newCol = horizontal ? col + i : col;
                     shipsLocations[newRow][newCol] = ship;
-                    coordinatesForCheckingSunk.add(newRow);
-                    coordinatesForCheckingSunk.add(newCol);
-                    waysForCheckingSunk.add(horizontal);
                 }
+                shipCoordinates.add(new int[] { row, col });
+                shipOrientations.add(horizontal);
                 placed = true;
             }
         }
@@ -215,7 +197,7 @@ public class Main {
     public static void showField() {
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                System.out.print(shipsLocations[i][j] + " ");
+                System.out.print(outputField[i][j] + " ");
             }
             System.out.println();
         }
@@ -230,8 +212,7 @@ public class Main {
 
     public static void clearScreen() {
         System.out.print("\033[H\033[2J");
-        for (int i = 0; i < 25; i++)
-        {
+        for (int i = 0; i < 25; i++) {
             System.out.println();
         }
         System.out.flush();
